@@ -33,13 +33,8 @@ const page = () => {
                 <a
                   href="#"
                   className="rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-cyan-300"
-                >
-                  Start exploring
-                </a>
-                <a
-                  href="#"
-                  className="rounded-full border border-white/20 px-5 py-3 font-medium text-white transition hover:bg-white/10"
-                >
+                >antia   Start exploring</a>
+                <a href="#" className="rounded-full border border-white/20 px-5 py-3 font-medium text-white transition hover:bg-white/10">
                   View features
                 </a>
               </div>
