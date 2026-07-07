@@ -63,3 +63,19 @@ const page = () => {
 }
 
 export default page
+
+
+public class alls{
+  public static double averageArray(int[] arr){
+    int sum=0;
+    int average=0;
+    for(int i=0;i<arr.length;i++){
+      sum+=arr[i]
+    }
+    average=sum/arr.length
+      return average
+}
+public static void main(String args[]){
+  System.out.println(averageArray([1,2,3,4,5]));
+}
+}

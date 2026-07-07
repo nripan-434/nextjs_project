@@ -1,7 +1,9 @@
 import express from 'express';
+import { PrismaClient } from '@prisma/client';
 
+const app = express();
+export const prisma = new PrismaClient();
 
-const app= express();
-app.listen(5000,()=>{
-    console.log('server is running')
-})
+app.listen(5000, () => {
+    console.log('server is running');
+});
