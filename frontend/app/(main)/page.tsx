@@ -1,81 +1,171 @@
-import React from 'react'
+"use client";
 
-const page = () => {
+import React from 'react';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+
+// Dynamically import PixelBlast to avoid SSR issues with Three.js
+const PixelBlast = dynamic(() => import('../../components/PixelBlast'), {
+  ssr: false,
+});
+
+export default function LandingPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <video
-        className="absolute inset-0 h-full w-full object-cover"
-        src="https://www.pexels.com/download/video/38286247/"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-      />
-      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]" />
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', backgroundColor: '#000' }}>
 
-      <section className="relative z-10 flex min-h-screen items-center justify-center px-6 py-20 sm:px-8 lg:px-12">
-        <div className="w-full max-w-6xl rounded-[2rem] border border-white/15 bg-white/10 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-10 lg:p-14">
-          <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div className="space-y-6">
-              <span className="inline-flex rounded-full border border-cyan-400/40 bg-cyan-400/10 px-3 py-1 text-sm font-medium text-cyan-200">
-                Dynamic experience
-              </span>
-              <div className="space-y-3">
-                <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-                  Build bold interfaces with cinematic motion.
-                </h1>
-                <p className="max-w-xl text-lg text-slate-200 sm:text-xl">
-                  A polished landing experience that blends immersive video, modern typography, and clear actions in one focused layout.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <a
-                  href="#"
-                  className="rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-cyan-300"
-                >antia   Start exploring</a>
-                <a href="#" className="rounded-full border border-white/20 px-5 py-3 font-medium text-white transition hover:bg-white/10">
-                  View features
-                </a>
-              </div>
-            </div>
+      {/* Background Effect - Non-interactive */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }}>
+        <PixelBlast
+          variant="circle"
+          pixelSize={6}
+          color="#B497CF"
+          patternScale={3}
+          patternDensity={1.2}
+          pixelSizeJitter={0.5}
+          enableRipples={false}
+          liquid={false}
+          speed={0.6}
+          edgeFade={0.25}
+          transparent
+        />
+      </div>
 
-            <div className="rounded-3xl border border-white/15 bg-slate-950/40 p-5 shadow-lg shadow-black/20">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  { label: 'Live visuals', value: '24/7' },
-                  { label: 'Fast delivery', value: 'Instant' },
-                  { label: 'Creative focus', value: '100%' },
-                  { label: 'Engagement', value: 'High' },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-white/10 bg-white/10 p-4">
-                    <p className="text-sm text-slate-300">{item.label}</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
-                  </div>
-                ))}
-              </div>
+      {/* Static Content / Hero Section - Glassmorphism UI */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100vh',
+          zIndex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <div style={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          background: 'transparent',
+          overflow: 'hidden'
+        }}>
+
+          {/* Left Column - Caption */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: '4rem',
+            paddingLeft: '8rem',
+            color: '#ffffff',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+          }}>
+            <h1 style={{
+              fontSize: '5rem',
+              fontWeight: 800,
+              margin: '0 0 1.5rem 0',
+              background: 'linear-gradient(135deg, #ffffff 0%, #B497CF 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-2px',
+              lineHeight: 1.1
+            }}>
+              Discover The Future of Engineering.
+            </h1>
+
+            <p style={{
+              fontSize: '1.25rem',
+              lineHeight: 1.7,
+              color: 'rgba(255, 255, 255, 0.8)',
+              margin: '0 0 3rem 0',
+              maxWidth: '550px',
+            }}>
+              Join a thriving network of developers. Share insights, build groundbreaking projects, and elevate your technical expertise in a truly modern workspace.
+            </p>
+
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
+              <Link href="/register" style={{
+                backgroundColor: '#B497CF',
+                color: '#0d0d12',
+                padding: '16px 40px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                textDecoration: 'none',
+                fontSize: '1.2rem',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 15px rgba(180, 151, 207, 0.3)',
+                cursor: 'pointer'
+              }}>
+                Get Started
+              </Link>
             </div>
           </div>
+
+          {/* Right Column - Floating Images */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            position: 'relative'
+          }}>
+            <style>{`
+              @keyframes float-complex {
+                0% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+                33% { transform: translateY(-25px) translateX(10px) rotate(2deg); }
+                66% { transform: translateY(-10px) translateX(-10px) rotate(-1deg); }
+                100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+              }
+              @keyframes float-complex-alt {
+                0% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+                33% { transform: translateY(20px) translateX(-15px) rotate(-3deg); }
+                66% { transform: translateY(10px) translateX(15px) rotate(2deg); }
+                100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+              }
+            `}</style>
+
+            <img
+              src="https://images.unsplash.com/photo-1618477388954-7852f32655ec?q=80&w=800&auto=format&fit=crop"
+              alt="Floating Tech Element"
+              style={{
+                width: '65%',
+                maxWidth: '350px',
+                height: 'auto',
+                borderRadius: '16px',
+                boxShadow: '0 30px 60px rgba(0,0,0,0.6)',
+                animation: 'float-complex 8s ease-in-out infinite',
+                border: '1px solid rgba(255,255,255,0.1)',
+                position: 'absolute',
+                top: '20%',
+                right: '15%',
+                zIndex: 2
+              }}
+            />
+
+            <img 
+              src="https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=800&auto=format&fit=crop" 
+              alt="Secondary Tech Element"
+              style={{
+                width: '50%',
+                maxWidth: '280px',
+                height: 'auto',
+                borderRadius: '16px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
+                animation: 'float-complex-alt 10s ease-in-out infinite',
+                border: '1px solid rgba(255,255,255,0.15)',
+                position: 'absolute',
+                bottom: '15%',
+                left: '20%',
+                zIndex: 1
+              }}
+            />
+          </div>
+
         </div>
-      </section>
-    </main>
-  )
-}
-
-export default page
-
-
-public class alls{
-  public static double averageArray(int[] arr){
-    int sum=0;
-    int average=0;
-    for(int i=0;i<arr.length;i++){
-      sum+=arr[i]
-    }
-    average=sum/arr.length
-      return average
-}
-public static void main(String args[]){
-  System.out.println(averageArray([1,2,3,4,5]));
-}
+      </div>
+    </div>
+  );
 }

@@ -1,0 +1,149 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0d0d12;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  justify-content: center;
+  align-items: center;
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  background-color: #111116;
+  border: 1px solid #1f1f2e;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.logoSubtitle {
+  font-size: 14px;
+  color: #8b8b9c;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  color: #b3b3c4;
+  font-weight: 500;
+}
+
+.input {
+  background-color: #1a1a24;
+  border: 1px solid #2a2a36;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #ffffff;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #a87ffb;
+}
+
+.input::placeholder {
+  color: #6b6b7b;
+}
+
+.submitBtn {
+  background-color: #a87ffb;
+  color: #0d0d12;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s ease;
+}
+
+.submitBtn:hover {
+  background-color: #b895fc;
+}
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #8b8b9c;
+}
+
+.link {
+  color: #a87ffb;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+  color: #4a4a5e;
+  font-size: 12px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #2a2a36;
+}
+
+.divider::before {
+  margin-right: 12px;
+}
+
+.divider::after {
+  margin-left: 12px;
+}
+
+.socialBtn {
+  background-color: transparent;
+  color: #ffffff;
+  border: 1px solid #2a2a36;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.socialBtn:hover {
+  background-color: #1a1a24;
+}

@@ -1,13 +1,12 @@
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
-export default function AuthLayout({
+
+export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div>
-    <Navbar/>
-  <main>{children}</main>;
-    <Footer/>
-  </div>
+  return <div style={{ background: '#0d0d12', minHeight: '100vh', margin: 0, padding: 0 }}>
+   <Navbar/> {children}<Footer/>
+    </div>;
 }

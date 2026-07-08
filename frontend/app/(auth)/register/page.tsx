@@ -1,128 +1,46 @@
+import React from 'react';
 import Link from 'next/link';
-import { Button, ButtonLink } from '../../../components/ui/Button';
-
-const perks = [
-  'Launch your profile in minutes',
-  'Join coding circles and hackathons',
-  'Showcase your projects to peers',
-];
+import styles from '../Auth.module.css';
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(34,211,238,0.14),_transparent_32%),linear-gradient(135deg,_#020617_0%,_#0f172a_45%,_#111827_100%)] px-4 py-10 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
-        <section className="hidden w-[45%] flex-col justify-between bg-slate-900/70 p-8 lg:flex">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-300">Join the circle</p>
-            <h1 className="mt-6 text-4xl font-semibold leading-tight text-white">
-              Start building your developer identity today.
-            </h1>
-            <p className="mt-4 max-w-md text-base text-slate-300">
-              Create a profile to share ideas, get feedback, and connect with passionate developers from around the world.
-            </p>
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <div className={styles.logo}>DevCollective</div>
+        <div className={styles.logoSubtitle}>Join the community today.</div>
+        
+        <form className={styles.form}>
+          <div className={styles.inputGroup}>
+            <label className={styles.label} htmlFor="name">Full Name</label>
+            <input className={styles.input} type="text" id="name" placeholder="John Doe" required />
           </div>
-
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-            {perks.map((item) => (
-              <div key={item} className="flex items-start gap-3">
-                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-cyan-300" />
-                <p className="text-sm text-slate-200">{item}</p>
-              </div>
-            ))}
+          
+          <div className={styles.inputGroup}>
+            <label className={styles.label} htmlFor="email">Email address</label>
+            <input className={styles.input} type="email" id="email" placeholder="you@example.com" required />
           </div>
-        </section>
-
-        <section className="flex-1 p-6 sm:p-8 lg:p-10">
-          <div className="mx-auto flex h-full max-w-md flex-col justify-center">
-            <div className="mb-8">
-              <p className="text-sm font-medium text-cyan-300">Create account</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">Join DevCommunity</h2>
-              <p className="mt-2 text-sm text-slate-400">
-                Make your mark in a community built for curious minds.
-              </p>
-            </div>
-
-            <form className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm text-slate-300" htmlFor="firstName">
-                    First name
-                  </label>
-                  <input
-                    id="firstName"
-                    type="text"
-                    placeholder="Ava"
-                    className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm text-slate-300" htmlFor="lastName">
-                    Last name
-                  </label>
-                  <input
-                    id="lastName"
-                    type="text"
-                    placeholder="Nguyen"
-                    className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-slate-300" htmlFor="username">
-                  Username
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  placeholder="a.nguyen"
-                  className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-slate-300" htmlFor="email">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="you@devmail.com"
-                  className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-slate-300" htmlFor="password">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Create a strong password"
-                  className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400"
-                />
-              </div>
-
-              <div className="text-sm text-slate-400">
-                By creating an account, you agree to our{' '}
-                <Link href="#" className="text-cyan-300 transition hover:text-cyan-200">
-                  terms and privacy policy
-                </Link>
-              </div>
-
-              <Button className="w-full">Create account</Button>
-            </form>
-
-            <p className="mt-8 text-center text-sm text-slate-400">
-              Already part of the community?{' '}
-              <ButtonLink href="/login" variant="ghost" className="px-0 py-0 text-cyan-300 hover:text-cyan-200">
-                Sign in
-              </ButtonLink>
-            </p>
+          
+          <div className={styles.inputGroup}>
+            <label className={styles.label} htmlFor="password">Password</label>
+            <input className={styles.input} type="password" id="password" placeholder="Create a strong password" required />
           </div>
-        </section>
+          
+          <button type="button" className={styles.submitBtn}>Create Account</button>
+        </form>
+        
+        <div className={styles.divider}>OR</div>
+        
+        <button type="button" className={styles.socialBtn}>
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+          </svg>
+          Sign up with GitHub
+        </button>
+        
+        <div className={styles.footer}>
+          Already have an account? <Link href="/login" className={styles.link}>Log in</Link>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
