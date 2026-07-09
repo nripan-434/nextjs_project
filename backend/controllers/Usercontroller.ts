@@ -54,3 +54,21 @@ export const Registercontroller = async (req: Request, res: Response): Promise<a
         return res.status(500).json({ message: "Server error during registration" });
     }
 };
+
+// ==========================================
+// Google OAuth Callback Controller
+// ==========================================
+export const googleAuthCallback = (req: Request, res: Response) => {
+    // Passport automatically attached the user to req.user after successful login
+    if (!req.user) {
+        return res.status(401).json({ message: "Authentication failed" });
+    }
+    
+    // In an industrial app, you might issue a JWT here, or rely on the session cookie.
+    // For now, redirect to the frontend dashboard.
+    // E.g., res.redirect('http://localhost:3000/dashboard');
+    return res.status(200).json({ 
+        message: "Successfully logged in with Google",
+        user: req.user
+    });
+};
