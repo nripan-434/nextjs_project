@@ -4,6 +4,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import dotenv from 'dotenv';
 import session from 'express-session';
+import cors from 'cors'; // Import cors
 import './config/passport.js'; // Import passport config to initialize strategy
 import authRoutes from './routes/authRoutes.js';
 import passport from 'passport';
@@ -17,6 +18,10 @@ const adapter = new PrismaPg(pool);
 const app = express();
 export const prisma = new PrismaClient({ adapter });
 
+app.use(cors({
+    origin: 'http://localhost:3000', // Adjust this to match your Next.js frontend URL
+    credentials: true // Crucial for allowing session cookies to be sent
+}));
 app.use(express.json());
 
 // Session config
