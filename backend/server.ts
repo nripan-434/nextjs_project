@@ -7,6 +7,7 @@ import session from 'express-session';
 import cors from 'cors'; // Import cors
 import './config/passport.js'; // Import passport config to initialize strategy
 import authRoutes from './routes/authRoutes.js';
+import ideaRoutes from './routes/ideaRoutes.js';
 import passport from 'passport';
 
 dotenv.config();
@@ -34,8 +35,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Mount the auth routes
+// Mount routes
 app.use('/auth', authRoutes);
+app.use('/ideas', ideaRoutes);
 
 app.listen(5000, () => {
     console.log('server is running on http://localhost:5000');

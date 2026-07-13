@@ -6,6 +6,11 @@ interface User {
   email: string;
   username: string;
   avatar: string;
+  githubUrl?: string;
+  bio?: string;
+  role?: string;
+  techStack?: string[];
+  isProfileComplete?: boolean;
 }
 
 interface UserState {
@@ -13,6 +18,7 @@ interface UserState {
   isLoading: boolean;
   fetchUser: () => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
 export const useUserStore = create<UserState>((set) => ({
@@ -41,6 +47,16 @@ export const useUserStore = create<UserState>((set) => ({
       window.location.href = '/login';
     } catch (error) {
       console.error("Logout failed:", error);
+    }
+  },
+
+  updateProfile: async (data) => {
+    try {
+      const response = await api.put('/auth/me', data);
+      set({ user: response.data.user });
+    } catch (error) {
+      console.error("Failed to update profile", error);
+      throw error;
     }
   }
 }));

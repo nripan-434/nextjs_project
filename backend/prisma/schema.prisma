@@ -13,11 +13,34 @@ datasource db {
 
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  username  String?  @unique
-  password  String?
-  googleId  String?  @unique
-  avatar    String?
-  createdAt DateTime @default(now())
+  id                String   @id @default(uuid())
+  email             String   @unique
+  username          String?  @unique
+  password          String?
+  googleId          String?  @unique
+  avatar            String?
+  
+  // Progressive Profiling Fields
+  githubUrl         String?
+  bio               String?
+  role              String?
+  techStack         String[] @default([]) // Array of languages/tools
+  isProfileComplete Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  ideas             Idea[]
+}
+
+model Idea {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  tags        String[] @default([])
+  likes       Int      @default(0)
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import passport from 'passport';
-import { googleAuthCallback } from '../controllers/Usercontroller.js';
+import { googleAuthCallback, Registercontroller, Logincontroller, UpdateProfileController } from '../controllers/Usercontroller.js';
 
 const router = Router();
+
+// Route 0: Local Register and Login
+router.post('/register', Registercontroller);
+router.post('/login', Logincontroller);
 
 // Route 1: Trigger the Google login page
 router.get(
@@ -24,6 +28,9 @@ router.get('/me', (req, res) => {
     return res.status(401).json({ user: null, message: "Not authenticated" });
   }
 });
+
+// Route 3.5: Update user profile (Progressive Profiling)
+router.put('/me', UpdateProfileController);
 
 // Route 4: Logout
 router.get('/logout', (req, res, next) => {

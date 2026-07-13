@@ -1,31 +1,71 @@
-import React from 'react';
+'use client';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { api } from '@/utils/axios';
+import { useUserStore } from '@/store/userStore';
 import styles from '../Auth.module.css';
 
 export default function RegisterPage() {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const fetchUser = useUserStore(state => state.fetchUser);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      await api.post('/auth/register', { username, email, password });
+      await fetchUser(); // Update the global state since backend auto-logs us in!
+      router.push('/userhome'); // Redirect to dashboard
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to register');
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.logo}>DevCollective</div>
         <div className={styles.logoSubtitle}>Join the community today.</div>
         
-        <form className={styles.form}>
+        {error && <p style={{ color: '#ff6b6b', fontSize: '14px', textAlign: 'center', marginBottom: '1rem', background: 'rgba(255, 107, 107, 0.1)', padding: '0.5rem', borderRadius: '4px' }}>{error}</p>}
+
+        <form className={styles.form} onSubmit={handleRegister}>
           <div className={styles.inputGroup}>
-            <label className={styles.label} htmlFor="name">Full Name</label>
-            <input className={styles.input} type="text" id="name" placeholder="John Doe" required />
+            <label className={styles.label} htmlFor="name">Username</label>
+            <input 
+              className={styles.input} type="text" id="name" placeholder="dev_wizard" required 
+              value={username} onChange={(e) => setUsername(e.target.value)}
+            />
           </div>
           
           <div className={styles.inputGroup}>
             <label className={styles.label} htmlFor="email">Email address</label>
-            <input className={styles.input} type="email" id="email" placeholder="you@example.com" required />
+            <input 
+              className={styles.input} type="email" id="email" placeholder="you@example.com" required 
+              value={email} onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           
           <div className={styles.inputGroup}>
             <label className={styles.label} htmlFor="password">Password</label>
-            <input className={styles.input} type="password" id="password" placeholder="Create a strong password" required />
+            <input 
+              className={styles.input} type="password" id="password" placeholder="Create a strong password" required 
+              value={password} onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           
-          <button type="button" className={styles.submitBtn}>Create Account</button>
+          <button type="submit" className={styles.submitBtn} disabled={isLoading}>
+            {isLoading ? 'Creating Account...' : 'Create Account'}
+          </button>
         </form>
         
         <div className={styles.divider}>OR</div>

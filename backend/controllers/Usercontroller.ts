@@ -1,18 +1,15 @@
 import bcrypt from 'bcryptjs';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../server.js';     
 
-export const Registercontroller = async (req: Request, res: Response): Promise<any> => {
+export const Registercontroller = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     try {
-        // Notice I changed 'name' to 'username' to match your schema.prisma!
         const { username, email, password } = req.body;
 
-        // 1. Basic validation
         if (!username || !email || !password) {
             return res.status(400).json({ message: "Please provide username, email, and password" });
         }
 
-        // 2. Check if a user with that email or username already exists
         const existingUser = await prisma.user.findFirst({
             where: {
                 OR: [
@@ -26,11 +23,9 @@ export const Registercontroller = async (req: Request, res: Response): Promise<a
             return res.status(400).json({ message: "User with this email or username already exists" });
         }
 
-        // 3. Hash the password for security
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 4. Save the new user to the database using Prisma
         const newUser = await prisma.user.create({
             data: {
                 username,
@@ -39,14 +34,17 @@ export const Registercontroller = async (req: Request, res: Response): Promise<a
             },
         });
 
-        // 5. Send a success response (omitting the password!)
-        return res.status(201).json({
-            message: "User registered successfully",
-            user: {
-                id: newUser.id,
-                username: newUser.username,
-                email: newUser.email,
-            }
+        // Industry Standard: Auto-login the user after registration so they don't have to log in manually
+        req.login(newUser, (err) => {
+            if (err) return next(err);
+            return res.status(201).json({
+                message: "User registered and logged in successfully",
+                user: {
+                    id: newUser.id,
+                    username: newUser.username,
+                    email: newUser.email,
+                }
+            });
         });
 
     } catch (error) {
@@ -56,17 +54,89 @@ export const Registercontroller = async (req: Request, res: Response): Promise<a
 };
 
 // ==========================================
+// Local Login Controller
+// ==========================================
+export const Logincontroller = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: "Please provide email and password" });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (!user || !user.password) {
+            return res.status(401).json({ message: "Invalid email or password" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Invalid email or password" });
+        }
+
+        // Use passport's req.login to establish the session identically to Google OAuth
+        req.login(user, (err) => {
+            if (err) return next(err);
+            return res.status(200).json({
+                message: "Logged in successfully",
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    avatar: user.avatar
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error("Error in login:", error);
+        return res.status(500).json({ message: "Server error during login" });
+    }
+};
+
+// ==========================================
+// Update Profile Controller (Progressive Profiling)
+// ==========================================
+export const UpdateProfileController = async (req: Request, res: Response): Promise<any> => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const userId = (req.user as any).id;
+        const { bio, role, githubUrl, techStack } = req.body;
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                bio,
+                role,
+                githubUrl,
+                techStack: techStack || [],
+                isProfileComplete: true // Mark as complete!
+            }
+        });
+
+        return res.status(200).json({
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        return res.status(500).json({ message: "Server error during profile update" });
+    }
+};
+
+// ==========================================
 // Google OAuth Callback Controller
 // ==========================================
 export const googleAuthCallback = (req: Request, res: Response) => {
-    // Passport automatically attached the user to req.user after successful login
     if (!req.user) {
-        // If it failed, send them back to the login page
         return res.redirect('http://localhost:3000/login?error=auth_failed');
     }
-    
-    // Success! Redirect the browser back to your new Next.js dashboard
     return res.redirect('http://localhost:3000/userhome');
 };
-
-
