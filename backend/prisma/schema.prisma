@@ -29,6 +29,8 @@ model User {
   
   createdAt         DateTime @default(now())
   ideas             Idea[]
+  likes             Like[]
+  comments          Comment[]
 }
 
 model Idea {
@@ -36,11 +38,34 @@ model Idea {
   title       String
   description String
   tags        String[] @default([])
-  likes       Int      @default(0)
   
   authorId    String
   author      User     @relation(fields: [authorId], references: [id])
   
+  likes       Like[]
+  comments    Comment[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ideaId    String
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ideaId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  text      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ideaId    String
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
 }

@@ -15,6 +15,7 @@ export default function HomePage() {
   const [newDesc, setNewDesc] = useState('');
   const [newTags, setNewTags] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,10 +48,12 @@ export default function HomePage() {
     }
   };
 
-  const handleDeleteIdea = async (id: string) => {
+  const confirmDeleteIdea = async () => {
+    if (!ideaToDelete) return;
     try {
-      await api.delete(`/ideas/${id}`);
-      setIdeas(ideas.filter(idea => idea.id !== id));
+      await api.delete(`/ideas/${ideaToDelete}`);
+      setIdeas(ideas.filter(idea => idea.id !== ideaToDelete));
+      setIdeaToDelete(null);
     } catch (error) {
       console.error(error);
     }
@@ -77,6 +80,20 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#0a0a0a] text-gray-300 font-sans selection:bg-orange-500/30 flex flex-col">
       <Navbar />
       <OnboardingModal />
+      
+      {ideaToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+          <div className="bg-[#121212] border border-neutral-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-2">Delete Idea?</h3>
+            <p className="text-neutral-400 text-sm mb-6">This action cannot be undone. Are you sure you want to permanently delete this project pitch?</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setIdeaToDelete(null)} className="px-4 py-2 text-sm text-gray-300 hover:text-white transition">Cancel</button>
+              <button onClick={confirmDeleteIdea} className="px-4 py-2 text-sm bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition font-medium">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-[1400px] w-full mx-auto flex justify-center gap-6 p-4 flex-1">
         
         {/* LEFT SIDEBAR */}
@@ -159,7 +176,7 @@ export default function HomePage() {
           {/* Dynamic Feed Mapping */}
           <div className="flex flex-col gap-6">
             {ideas.map(idea => (
-              <IdeaCard key={idea.id} idea={idea} onDelete={handleDeleteIdea} currentUserId={user?.id} />
+              <IdeaCard key={idea.id} idea={idea} onDelete={() => setIdeaToDelete(idea.id)} currentUserId={user?.id} />
             ))}
           </div>
         </main>
@@ -201,8 +218,43 @@ export default function HomePage() {
 
 // --- Dynamic Components ---
 
-function IdeaCard({ idea, onDelete, currentUserId }: { idea: any, onDelete: (id: string) => void, currentUserId?: string }) {
+function IdeaCard({ idea, onDelete, currentUserId }: { idea: any, onDelete: () => void, currentUserId?: string }) {
   const authorName = idea.author?.username || 'Unknown Developer';
+  const hasLiked = idea.likes?.some((l: any) => l.userId === currentUserId);
+  
+  const [isLiked, setIsLiked] = useState(hasLiked);
+  const [likesCount, setLikesCount] = useState(idea.likes?.length || 0);
+  
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState(idea.comments || []);
+  const [newComment, setNewComment] = useState('');
+  const [isPostingComment, setIsPostingComment] = useState(false);
+
+  const handleLike = async () => {
+    setIsLiked(!isLiked);
+    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+    try {
+      await api.post(`/ideas/${idea.id}/like`);
+    } catch (e) {
+      setIsLiked(hasLiked);
+      setLikesCount(idea.likes?.length || 0);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim()) return;
+    setIsPostingComment(true);
+    try {
+      const res = await api.post(`/ideas/${idea.id}/comments`, { text: newComment });
+      setComments([...comments, res.data]);
+      setNewComment('');
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setIsPostingComment(false);
+    }
+  };
+
   return (
     <div className="bg-[#121212] rounded-2xl p-5 border border-neutral-800/60 hover:border-neutral-700 transition relative group">
       <div className="flex justify-between items-start mb-4">
@@ -220,7 +272,7 @@ function IdeaCard({ idea, onDelete, currentUserId }: { idea: any, onDelete: (id:
           </div>
         </div>
         {idea.authorId === currentUserId && (
-          <button onClick={() => onDelete(idea.id)} className="text-red-500/50 hover:text-red-500 text-xs transition px-2 py-1 bg-red-500/10 rounded-md opacity-0 group-hover:opacity-100">Delete</button>
+          <button onClick={onDelete} className="text-red-500/50 hover:text-red-500 text-xs transition px-2 py-1 bg-red-500/10 rounded-md opacity-0 group-hover:opacity-100">Delete</button>
         )}
       </div>
 
@@ -245,13 +297,50 @@ function IdeaCard({ idea, onDelete, currentUserId }: { idea: any, onDelete: (id:
 
       <div className="flex justify-between items-center border-t border-neutral-800/60 pt-4 mt-2">
         <div className="flex gap-6 text-neutral-500 text-xs font-medium">
-          <button className="flex items-center gap-2 hover:text-orange-500"><HeartIcon className="text-orange-500/80" /> {idea.likes}</button>
-          <button className="flex items-center gap-2 hover:text-gray-300"><CommentIcon /> 0</button>
+          <button onClick={handleLike} className={`flex items-center gap-2 transition ${isLiked ? 'text-orange-500' : 'hover:text-orange-400'}`}>
+            <HeartIcon className={isLiked ? 'text-orange-500' : 'text-neutral-500'} /> {likesCount}
+          </button>
+          <button onClick={() => setShowComments(!showComments)} className={`flex items-center gap-2 transition ${showComments ? 'text-gray-300' : 'hover:text-gray-300'}`}>
+            <CommentIcon /> {comments.length}
+          </button>
         </div>
         <button className="bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2">
           Collaborate <CodeIcon className="w-3 h-3" />
         </button>
       </div>
+
+      {showComments && (
+        <div className="mt-4 pt-4 border-t border-neutral-800/60 flex flex-col gap-4">
+          {comments.map((c: any) => (
+            <div key={c.id} className="flex gap-3">
+              {c.user?.avatar ? (
+                <img src={c.user.avatar} className="w-6 h-6 rounded-full" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] text-white font-bold">
+                  {c.user?.username?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+              <div className="bg-neutral-900/50 rounded-xl p-3 flex-1 border border-neutral-800/50">
+                <span className="text-gray-300 text-xs font-medium block mb-1">{c.user?.username}</span>
+                <p className="text-neutral-400 text-sm">{c.text}</p>
+              </div>
+            </div>
+          ))}
+          
+          <div className="flex gap-3 mt-2">
+            <input 
+              type="text" 
+              placeholder="Write a comment..." 
+              value={newComment} onChange={e => setNewComment(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handlePostComment()}
+              className="flex-1 bg-transparent border border-neutral-800 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-neutral-700"
+            />
+            <button onClick={handlePostComment} disabled={!newComment.trim() || isPostingComment} className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition">
+              {isPostingComment ? '...' : 'Post'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
