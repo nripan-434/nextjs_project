@@ -1,3 +1,10 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Authentication',
+  description: 'Login or create an account for Idea Board.',
+};
+
 export default function AuthLayout({
   children,
 }: {

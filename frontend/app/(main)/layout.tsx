@@ -1,5 +1,11 @@
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Home',
+  description: 'Discover the latest ideas from the developer community.',
+};
 
 export default function MainLayout({
   children,

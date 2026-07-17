@@ -1,7 +1,21 @@
 
 
+import type { Metadata } from 'next';
 import "./globals.css";
 
+export const metadata: Metadata = {
+  title: {
+    template: '%s | Idea Board',
+    default: 'Idea Board - The Developer Community Platform',
+  },
+  description: 'Share your ideas, get feedback, and collaborate with the developer community.',
+  openGraph: {
+    title: 'Idea Board',
+    description: 'Share your ideas, get feedback, and collaborate with the developer community.',
+    siteName: 'Idea Board',
+    type: 'website',
+  },
+};
 
 
 export default function RootLayout({
@@ -19,22 +33,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-
-// public class alls{
-//   public static int secondlar(int[] arr){
-//     int largest= -Infinity;
-//     int second= -Infininty;
-//     for(int i = 0; i< arr.length; i++){
-//       if(arr[i]>largest){
-//         second=largest;
-//         largest=arr[i];
-//       }
-//     }
-//     return this.second;
-//   }
-//   public static void main(String args[]){
-//     int[] arr = {1,2,3,4,5};
-//     System.out.println(secondlar(arr));
-//   }
-// }

@@ -25,16 +25,13 @@ export const useUserStore = create<UserState>((set) => ({
   user: null,
   isLoading: true,
 
-  // Zustand can easily manage API calls!
   fetchUser: async () => {
     set({ isLoading: true });
     try {
-      // Axios handles the baseURL and credentials automatically now!
       const response = await api.get('/auth/me');
       set({ user: response.data.user, isLoading: false });
     } catch (error) {
       console.error("Failed to fetch user:", error);
-      // Axios will throw an error for 401 Unauthorized, which is expected if not logged in
       set({ user: null, isLoading: false });
     }
   },
@@ -43,7 +40,6 @@ export const useUserStore = create<UserState>((set) => ({
     try {
       await api.get('/auth/logout');
       set({ user: null });
-      // Redirect to login page
       window.location.href = '/login';
     } catch (error) {
       console.error("Logout failed:", error);
