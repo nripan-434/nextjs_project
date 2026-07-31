@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import type { Request, Response, NextFunction } from 'express';
-import { prisma } from '../server.js';     
+import { prisma } from '../server.js';
+import type { RegisterDTO, LoginDTO, UpdateProfileDTO } from '../../types/index.js';
 
 export const Registercontroller = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     try {

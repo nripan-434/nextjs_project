@@ -1,17 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../utils/axios';
-
-interface User {
-  id: string;
-  email: string;
-  username: string;
-  avatar: string;
-  githubUrl?: string;
-  bio?: string;
-  role?: string;
-  techStack?: string[];
-  isProfileComplete?: boolean;
-}
+import type { User } from '@types';
 
 interface UserState {
   user: User | null;

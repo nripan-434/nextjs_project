@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../server.js';
+import type { CreateIdeaDTO, UpdateIdeaDTO, CreateCommentDTO } from '../../types/index.js';
 
 // Create a new Idea (Post)
 export const createIdea = async (req: Request, res: Response): Promise<any> => {
