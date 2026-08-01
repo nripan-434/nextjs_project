@@ -16,11 +16,13 @@ model User {
   id                String   @id @default(uuid())
   email             String   @unique
   username          String?  @unique
-  password          String?
   googleId          String?  @unique
   avatar            String?
   
-  // Progressive Profiling Fields
+  // GitHub OAuth & Profiling Fields
+  githubId          String?  @unique
+  githubAccessToken String?
+  githubUsername    String?
   githubUrl         String?
   bio               String?
   role              String?

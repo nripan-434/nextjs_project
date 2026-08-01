@@ -8,6 +8,7 @@ import cors from 'cors'; // Import cors
 import './config/passport.js'; // Import passport config to initialize strategy
 import authRoutes from './routes/authRoutes.js';
 import ideaRoutes from './routes/ideaRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
 import passport from 'passport';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { createClient } from 'redis';
@@ -46,6 +47,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use('/auth', authRoutes);
 app.use('/ideas', ideaRoutes);
+app.use('/projects', projectRoutes);
 app.use(errorHandler);
 app.listen(5000, () => {
     console.log('server is running on http://localhost:5000');

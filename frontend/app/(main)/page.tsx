@@ -17,6 +17,8 @@ export default function LandingPage() {
       {/* Background Effect - Non-interactive */}
       <div className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none">
         <PixelBlast
+          className=""
+          style={{}}
           variant="circle"
           pixelSize={6}
           color="#B497CF"

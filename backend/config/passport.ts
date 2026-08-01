@@ -1,49 +1,48 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { prisma } from '../server.js'; // Assuming you export prisma from server.ts
+import { Strategy as GitHubStrategy } from 'passport-github2';
+import { prisma } from '../server.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// 1. Define the Google Strategy
+// 1. Google Strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackURL: "/auth/google/callback"
+    clientID: process.env.GOOGLE_CLIENT_ID || 'fallback_google_id',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'fallback_google_secret',
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || "/auth/google/callback"
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-        // 1. Check if user already logged in with Google
         let user = await prisma.user.findUnique({
             where: { googleId: profile.id }
         });
         
         if (!user) {
-            // 2. If not, check if a user with this email already exists (registered via password)
-            const email = profile.emails?.[0].value;
+            const email = profile.emails?.[0]?.value;
             if (email) {
                 user = await prisma.user.findUnique({
                     where: { email: email }
                 });
             }
 
+            const avatarUrl = profile.photos?.[0]?.value || null;
+
             if (user) {
-                // 3. Link the Google account to the existing user
                 user = await prisma.user.update({
                     where: { id: user.id },
                     data: {
                         googleId: profile.id,
-                        avatar: user.avatar || profile.photos?.[0].value // keep existing avatar if present
+                        avatar: user.avatar || avatarUrl
                     }
                 });
             } else {
-                // 4. Create a brand new user
                 user = await prisma.user.create({
                     data: {
                         googleId: profile.id,
-                        email: profile.emails?.[0].value || '',
-                        username: profile.displayName,
-                        avatar: profile.photos?.[0].value
+                        email: email || '',
+                        username: profile.displayName || profile.username || 'User',
+                        avatar: avatarUrl
                     }
                 });
             }
@@ -55,17 +54,80 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-// 2. Serialize user to session
+// 2. GitHub Strategy
+passport.use(new GitHubStrategy({
+    clientID: process.env.GITHUB_CLIENT_ID || 'fallback_github_id',
+    clientSecret: process.env.GITHUB_CLIENT_SECRET || 'fallback_github_secret',
+    callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:5000/auth/github/callback"
+  },
+  async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+    try {
+      let user = await prisma.user.findUnique({
+        where: { githubId: profile.id }
+      });
+
+      const primaryEmail = profile.emails?.[0]?.value || `${profile.username}@github.user`;
+      const avatarUrl = profile.photos?.[0]?.value || profile._json?.avatar_url || null;
+
+      if (!user) {
+        if (primaryEmail) {
+          user = await prisma.user.findUnique({
+            where: { email: primaryEmail }
+          });
+        }
+
+        if (user) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              githubId: profile.id,
+              githubAccessToken: accessToken,
+              githubUsername: profile.username,
+              githubUrl: profile.profileUrl || `https://github.com/${profile.username}`,
+              avatar: user.avatar || avatarUrl
+            }
+          });
+        } else {
+          user = await prisma.user.create({
+            data: {
+              githubId: profile.id,
+              githubAccessToken: accessToken,
+              githubUsername: profile.username,
+              githubUrl: profile.profileUrl || `https://github.com/${profile.username}`,
+              email: primaryEmail,
+              username: profile.username || profile.displayName || 'GitHubUser',
+              avatar: avatarUrl
+            }
+          });
+        }
+      } else {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            githubAccessToken: accessToken,
+            githubUsername: profile.username,
+            avatar: user.avatar || avatarUrl
+          }
+        });
+      }
+
+      return done(null, user);
+    } catch (err) {
+      console.error('Error in GitHub Passport Strategy:', err);
+      return done(err, undefined);
+    }
+  }
+));
+
+// 3. Serialize user
 passport.serializeUser((user: any, done) => {
     done(null, user.id);
 });
 
-// 3. Deserialize user from session
+// 4. Deserialize user
 passport.deserializeUser(async (id: string, done) => {
     try {
-        const user = await prisma.user.findUnique({ where: { id },
-        select: {id: true, username: true, email: true, avatar: true }
-         });
+        const user = await prisma.user.findUnique({ where: { id } });
         done(null, user);
     } catch (err) {
         done(err, null);

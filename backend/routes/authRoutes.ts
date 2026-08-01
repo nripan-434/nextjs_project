@@ -8,16 +8,33 @@ const router = Router();
 router.post('/register', Registercontroller);
 router.post('/login', Logincontroller);
 
-// Route 1: Trigger the Google login page
+// Route 1: Trigger Google login
 router.get(
   '/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-// Route 2: The callback where Google redirects after login
+// Callback for Google login
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/login-failed' }),
   googleAuthCallback
+);
+
+// Route 2: Trigger GitHub login/authorization
+router.get(
+  '/github',
+  passport.authenticate('github', { scope: ['user:email', 'repo'] })
+);
+
+// Callback for GitHub login
+router.get(
+  '/github/callback',
+  passport.authenticate('github', { failureRedirect: (process.env.FRONTEND_URL || 'http://localhost:3000') + '/userhome?authError=github_failed' }),
+  (req, res) => {
+    // Successfully authenticated, redirect to frontend userhome workspace
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/userhome?githubConnected=true`);
+  }
 );
 
 // Route 3: Check current authenticated user
@@ -36,7 +53,7 @@ router.put('/me', UpdateProfileController);
 router.get('/logout', (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
-    res.clearCookie('connect.sid'); // clear the session cookie
+    res.clearCookie('connect.sid');
     res.status(200).json({ message: "Logged out successfully" });
   });
 });

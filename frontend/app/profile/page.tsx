@@ -41,10 +41,10 @@ export default function ProfilePage() {
             {/* Avatar Section */}
             <div className="flex flex-col items-center gap-4">
               {user.avatar ? (
-                <img src={user.avatar} alt={user.username} className="w-32 h-32 rounded-full border-4 border-neutral-800 object-cover shadow-lg" />
+                <img src={user.avatar} alt={user.username || 'User'} className="w-32 h-32 rounded-full border-4 border-neutral-800 object-cover shadow-lg" />
               ) : (
                 <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-orange-500 to-purple-600 flex items-center justify-center font-bold text-white text-5xl shadow-lg border-4 border-neutral-800">
-                  {user.username.charAt(0).toUpperCase()}
+                  {(user.username || 'User').charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="bg-orange-500/20 text-orange-500 px-4 py-1 rounded-full text-xs font-bold tracking-wide uppercase">
