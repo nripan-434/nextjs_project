@@ -18,12 +18,17 @@ dotenv.config();
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
-const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-redisClient.on('error', (err) => console.error('Redis Client Error', err));
-redisClient.on('connect', () => console.log('Connected to Redis successfully'));
-redisClient.connect().catch(console.error);
+let sessionStore;
+if (process.env.REDIS_URL) {
+    const redisClient = createClient({
+        url: process.env.REDIS_URL
+    });
+    redisClient.on('error', (err) => console.error('Redis Client Error', err));
+    redisClient.on('connect', () => console.log('Connected to Redis successfully'));
+    redisClient.connect().catch(console.error);
+    sessionStore = new RedisStore({ client: redisClient });
+}
+
 const app = express();
 export const prisma = new PrismaClient({ adapter });
 app.use(cors({
@@ -32,7 +37,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(session({
-    store: new RedisStore({ client: redisClient }), // <--- ADD THIS LINE
+    ...(sessionStore ? { store: sessionStore } : {}),
     secret: process.env.SESSION_SECRET || 'fallback_secret',
     resave: false, // RedisStore handles saving
     saveUninitialized: false,
