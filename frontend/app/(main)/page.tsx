@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-// Dynamically import PixelBlast to avoid SSR issues with Three.js
 const PixelBlast = dynamic(() => import('../../components/PixelBlast'), {
   ssr: false,
 });
