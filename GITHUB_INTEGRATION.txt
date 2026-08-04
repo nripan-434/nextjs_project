@@ -1,0 +1,139 @@
+================================================================================
+          DEVCOLLECTIVE - GITHUB INTEGRATION & WORKSPACE DOCUMENTATION
+================================================================================
+
+1. FEATURE OVERVIEW
+--------------------------------------------------------------------------------
+The GitHub Integration allows developers to link their GitHub repositories directly 
+to DevCollective collaboration workspaces. Once linked, the project workspace 
+fetches live data from GitHub's REST API and automates team member onboarding.
+
+Key Capabilities:
+  - GitHub OAuth Authentication (Sign in or link GitHub account).
+  - Automatic GitHub Repository Import (Select from user's repositories).
+  - Live GitHub Metrics (Stars, Forks, Main Language, Default Branch).
+  - Real-time Activity Feed (Recent commits with author avatars and commit messages).
+  - Live Issue Tracker (Open GitHub issues and community tasks).
+  - Automated Collaborator Invitations (Auto-invites developers to the GitHub repo 
+    when an owner accepts their join request).
+
+
+2. HOW THE FEATURE WORKS (TECHNICAL FLOW)
+--------------------------------------------------------------------------------
+A. Authentication & Token Capture:
+   - When a user logs in or links GitHub via `/auth/github`, Passport handles 
+     OAuth 2.0 authorization with GitHub.
+   - GitHub returns a `githubAccessToken` and `githubUsername`.
+   - The backend saves `githubAccessToken` on the `User` database record. No 
+     passwords are stored or required.
+
+B. Project Creation & Repository Linking:
+   - The user opens the "+ Create Project" modal on the dashboard.
+   - They choose between selecting a repository from their GitHub account or 
+     entering a GitHub repository URL/name manually.
+   - The backend validates that `{owner}/{repo}` exists on GitHub via:
+     GET https://api.github.com/repos/{owner}/{repo}
+   - The backend creates the `Project` record in PostgreSQL and sets the creator 
+     as the `OWNER` in the `ProjectMember` junction table.
+
+C. Live Workspace Dashboard (/projects/[id]):
+   - Opening a project workspace fetches database metadata AND queries GitHub in 
+     parallel using the owner/user's OAuth token:
+       1. Repo Details (Stars, Forks, Issues count)
+       2. Recent Commits (Top 5 recent commits)
+       3. Open Issues (Top 5 open issues)
+
+D. Automated GitHub Collaborator Onboarding:
+   - A developer clicks "Collaborate / Request to Join" on a project.
+   - A `ProjectMember` record is created with status = 'PENDING'.
+   - When the Project Owner clicks "ACCEPT", the backend executes:
+     PUT https://api.github.com/repos/{owner}/{repo}/collaborators/{username}
+     using the owner's `githubAccessToken`.
+   - GitHub automatically sends a repository collaboration invite to the member.
+
+
+3. PREREQUISITES & CONFIGURATION
+--------------------------------------------------------------------------------
+To use GitHub Integration, you must create a GitHub OAuth App in GitHub Settings:
+  1. Go to GitHub -> Settings -> Developer Settings -> OAuth Apps -> New OAuth App.
+  2. Set Homepage URL: http://localhost:3000
+  3. Set Authorization Callback URL: http://localhost:5000/auth/github/callback
+
+In your `backend/.env` file, configure:
+--------------------------------------------------------------------------------
+PORT=5000
+DATABASE_URL="postgresql://user:pass@localhost:5432/collaboration_db"
+FRONTEND_URL="http://localhost:3000"
+SESSION_SECRET="your_session_secret"
+
+GITHUB_CLIENT_ID="your_github_client_id"
+GITHUB_CLIENT_SECRET="your_github_client_secret"
+GITHUB_CALLBACK_URL="http://localhost:5000/auth/github/callback"
+--------------------------------------------------------------------------------
+
+
+4. HOW TO TRIGGER & TEST THE FEATURE STEP-BY-STEP
+--------------------------------------------------------------------------------
+Step 1: Start Redis and Backend
+  - Make sure Redis is running: `docker run -d --name my-redis -p 6379:6379 redis`
+  - Start backend: `cd backend && npm start`
+
+Step 2: Connect GitHub Account
+  - Go to `http://localhost:3000/login` or your profile page.
+  - Click "Continue with GitHub" or "Connect GitHub".
+  - Grant permissions on GitHub.
+
+Step 3: Create a Project
+  - On the dashboard (`http://localhost:3000/userhome`), click "+ Create Project".
+  - Either select a repository from the "Select My Repositories" tab or type 
+    the owner and repository name manually (e.g. `facebook` and `react`).
+  - Click "Create Project".
+
+Step 4: View Live Workspace Metrics
+  - You will be redirected to `/projects/[project_id]`.
+  - Verify live stars, forks, recent commits, and open issues are displayed.
+
+Step 5: Test Collaborator Invite
+  - Log in with a different user account.
+  - Navigate to the project page and click "Request to Join".
+  - Switch back to the owner account and click "ACCEPT".
+  - Check the invited user's GitHub account/email for the repository invite!
+
+
+5. LIMITATIONS & CONSIDERATIONS
+--------------------------------------------------------------------------------
+1. GitHub API Rate Limits:
+   - Unauthenticated API calls: 60 requests per hour.
+   - Authenticated API calls (using user's `githubAccessToken`): 5,000 requests/hr.
+
+2. OAuth Scopes:
+   - The application requests `user:email` and `repo` scopes.
+   - If a user logged in before `repo` scope was added, they must log in again to 
+     grant repository permissions.
+
+3. Private Repository Access:
+   - Private repositories are only visible if the user connected their GitHub account 
+     with the `repo` scope granted.
+
+4. Collaborator Invite Permissions:
+   - Sending repository invites requires the Project Owner's `githubAccessToken` 
+     to have write/admin access to the GitHub repository.
+
+5. Browser CORS Restrictions:
+   - `FRONTEND_URL` in `backend/.env` MUST NOT end with a trailing slash 
+     (use `http://localhost:3000`, NOT `http://localhost:3000/`).
+
+
+6. ARCHITECTURAL SUMMARY
+--------------------------------------------------------------------------------
+Frontend:
+  - Store: `frontend/store/projectStore.ts` (Zustand store for project state)
+  - Components: `frontend/components/CreateProjectModal.tsx`
+  - Workspace View: `frontend/app/projects/[id]/page.tsx`
+
+Backend:
+  - Passport Strategy: `backend/config/passport.ts`
+  - GitHub REST API Service: `backend/services/githubService.ts`
+  - Project Controller: `backend/controllers/ProjectController.ts`
+  - Routes: `backend/routes/projectRoutes.ts` & `backend/routes/authRoutes.ts`
+================================================================================

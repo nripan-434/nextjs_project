@@ -64,7 +64,7 @@ export const updateIdea = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ message: "Not authenticated" });
         }
         const authorId = (req.user as any).id;
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { title, description, tags } = req.body;
 
         const existingIdea = await prisma.idea.findUnique({ where: { id } });
@@ -93,7 +93,7 @@ export const deleteIdea = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ message: "Not authenticated" });
         }
         const authorId = (req.user as any).id;
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const existingIdea = await prisma.idea.findUnique({ where: { id } });
         if (!existingIdea) return res.status(404).json({ message: "Idea not found" });
@@ -113,7 +113,7 @@ export const toggleLikeIdea = async (req: Request, res: Response): Promise<any> 
     try {
         if (!req.user) return res.status(401).json({ message: "Not authenticated" });
         const userId = (req.user as any).id;
-        const { id: ideaId } = req.params;
+        const ideaId = req.params.id as string;
 
         const existingLike = await prisma.like.findUnique({
             where: { userId_ideaId: { userId, ideaId } }
@@ -137,7 +137,7 @@ export const addComment = async (req: Request, res: Response): Promise<any> => {
     try {
         if (!req.user) return res.status(401).json({ message: "Not authenticated" });
         const userId = (req.user as any).id;
-        const { id: ideaId } = req.params;
+        const ideaId = req.params.id as string;
         const { text } = req.body;
 
         if (!text) return res.status(400).json({ message: "Comment text is required" });

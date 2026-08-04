@@ -25,17 +25,16 @@ const Github = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 import {
-  fetchProjectById,
-  requestToJoinProject,
-  manageMemberStatus,
+  useProjectStore,
   ProjectData,
   LiveGitHubData
-} from '../../../utils/projectApi';
+} from '@/store/projectStore';
 
 export default function ProjectWorkspacePage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params?.id as string;
+  const { fetchProjectById, requestToJoinProject, manageMemberStatus } = useProjectStore();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,9 +56,10 @@ export default function ProjectWorkspacePage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchProjectById(projectId);
-      setProjectData(data.project);
-      setGithubData(data.githubData);
+      await fetchProjectById(projectId);
+      const state = useProjectStore.getState();
+      setProjectData(state.currentProject);
+      setGithubData(state.liveGithubData);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to load project workspace.');
     } finally {
