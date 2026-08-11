@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsx watch server.ts",
+    "start": "nodemon --exec tsx server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -28,7 +28,8 @@
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.22.0",
     "prisma": "^7.8.0",
-    "redis": "^6.1.0"
+    "redis": "^6.1.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

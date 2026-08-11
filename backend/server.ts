@@ -1,4 +1,6 @@
 import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -24,10 +26,16 @@ const redisClient = createClient({
 redisClient.on('error', (err) => console.error('Redis Client Error', err));
 redisClient.on('connect', () => console.log('Connected to Redis successfully'));
 redisClient.connect().catch(console.error);
+
 const app = express();
 export const prisma = new PrismaClient({ adapter });
+
+// Create HTTP server for Socket.io
+const server = http.createServer(app);
+const frontendOrigin = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+
 app.use(cors({
-  origin: (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, ''),
+  origin: frontendOrigin,
   credentials: true
 }));
 app.use(express.json());
@@ -45,10 +53,49 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Setup Socket.io Real-Time Notifications
+export const io = new Server(server, {
+  cors: {
+    origin: frontendOrigin,
+    credentials: true
+  }
+});
+
+io.on('connection', (socket) => {
+  socket.on('join_user_room', (userId: string) => {
+    if (userId) {
+      socket.join(`user_${userId}`);
+    }
+  });
+
+  socket.on('send_collaborate_request', (data: {
+    senderId: string;
+    senderName: string;
+    senderAvatar?: string;
+    ownerId: string;
+    ideaId: string;
+    ideaTitle: string;
+  }) => {
+    if (data.ownerId) {
+      io.to(`user_${data.ownerId}`).emit('new_collaborate_notification', {
+        id: Date.now().toString(),
+        senderId: data.senderId,
+        senderName: data.senderName,
+        senderAvatar: data.senderAvatar,
+        ideaId: data.ideaId,
+        ideaTitle: data.ideaTitle,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+});
+
 app.use('/auth', authRoutes);
 app.use('/ideas', ideaRoutes);
 app.use('/projects', projectRoutes);
 app.use(errorHandler);
-app.listen(5000, () => {
-    console.log('server is running on http://localhost:5000');
+
+server.listen(5000, () => {
+    console.log('server with socket.io is running on http://localhost:5000');
 });

@@ -2,15 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '../../store/userStore';
+import { useProjectStore } from '@/store/projectStore';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { OnboardingModal } from '@/components/ui/OnboardingModal';
 import CreateProjectModal from '@/components/CreateProjectModal';
 
 import { api } from '@/utils/axios';
+import { socket } from '@/utils/socket';
 
 export default function HomePage() {
   const { user, fetchUser, logout, isLoading } = useUserStore();
+  const { projects, fetchProjects } = useProjectStore();
   const [ideas, setIdeas] = useState<any[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -18,10 +21,13 @@ export default function HomePage() {
   const [isPosting, setIsPosting] = useState(false);
   const [ideaToDelete, setIdeaToDelete] = useState<string | null>(null);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetchUser();
+    fetchProjects();
     const fetchIdeas = async () => {
       try {
         const res = await api.get('/ideas');
@@ -31,7 +37,24 @@ export default function HomePage() {
       }
     };
     fetchIdeas();
-  }, [fetchUser]);
+  }, [fetchUser, fetchProjects]);
+
+  // Socket.io Room Join & Real-Time Notification Listener
+  useEffect(() => {
+    if (user?.id) {
+      socket.emit('join_user_room', user.id);
+
+      socket.on('new_collaborate_notification', (data: any) => {
+        setNotifications((prev) => [data, ...prev]);
+        setToastMessage(`🚀 ${data.senderName} wants to collaborate on your idea: "${data.ideaTitle}"`);
+        setTimeout(() => setToastMessage(null), 6000);
+      });
+
+      return () => {
+        socket.off('new_collaborate_notification');
+      };
+    }
+  }, [user?.id]);
 
   const handlePostIdea = async () => {
     if (!newTitle || !newDesc) return;
@@ -79,9 +102,18 @@ export default function HomePage() {
   if (!user) return null; // Prevents flashing the dashboard before the redirect executes
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-300 font-sans selection:bg-orange-500/30 flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-300 font-sans selection:bg-orange-500/30 flex flex-col relative">
       <Navbar />
       <OnboardingModal />
+
+      {/* Floating Real-time Socket Notification Toast */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-3 rounded-2xl shadow-2xl border border-indigo-400/40 text-xs font-semibold flex items-center gap-3 animate-bounce">
+          <span>{toastMessage}</span>
+          <button onClick={() => setToastMessage(null)} className="text-white/70 hover:text-white text-base font-bold">&times;</button>
+        </div>
+      )}
+
       <CreateProjectModal
         isOpen={isCreateProjectOpen}
         onClose={() => setIsCreateProjectOpen(false)}
@@ -137,7 +169,7 @@ export default function HomePage() {
             
             <div className="h-px bg-neutral-800 my-4"></div>
             
-            <NavItem icon={BellIcon} label="Notifications" />
+            <NavItem icon={BellIcon} label="Notifications" badge={notifications.length > 0 ? notifications.length.toString() : undefined} />
             <NavItem icon={SettingsIcon} label="Settings" />
             
             {user && (
@@ -194,7 +226,25 @@ export default function HomePage() {
           {/* Dynamic Feed Mapping */}
           <div className="flex flex-col gap-6">
             {ideas.map(idea => (
-              <IdeaCard key={idea.id} idea={idea} onDelete={() => setIdeaToDelete(idea.id)} currentUserId={user?.id} />
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                onDelete={() => setIdeaToDelete(idea.id)}
+                currentUserId={user?.id}
+                onCollaborate={(selectedIdea) => {
+                  if (!user) return;
+                  socket.emit('send_collaborate_request', {
+                    senderId: user.id,
+                    senderName: user.username || user.email.split('@')[0],
+                    senderAvatar: user.avatar,
+                    ownerId: selectedIdea.authorId,
+                    ideaId: selectedIdea.id,
+                    ideaTitle: selectedIdea.title
+                  });
+                  setToastMessage(`✅ Collaboration request sent to ${selectedIdea.author?.username || 'Idea Owner'}!`);
+                  setTimeout(() => setToastMessage(null), 4000);
+                }}
+              />
             ))}
           </div>
         </main>
@@ -202,18 +252,54 @@ export default function HomePage() {
         {/* RIGHT SIDEBAR */}
         <aside className="hidden xl:flex flex-col w-[300px] shrink-0 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar gap-8 pl-4">
           
-          {/* Active Workspaces */}
-          <div className="bg-gradient-to-br from-indigo-500/10 to-[#121212] border border-indigo-500/20 rounded-2xl p-5 relative">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="bg-indigo-500/20 p-1.5 rounded-lg">
-                <CodeIcon className="text-indigo-400 w-4 h-4" />
+          {/* Active Workspaces & Projects */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="bg-indigo-500/20 p-1.5 rounded-lg">
+                  <CodeIcon className="text-indigo-400 w-4 h-4" />
+                </div>
+                <h3 className="text-white font-medium text-sm">Project Workspaces</h3>
               </div>
-              <h3 className="text-white font-medium text-sm">Active Workspace</h3>
+              <span className="text-xs text-neutral-500 font-semibold">{projects.length}</span>
             </div>
-            <p className="text-neutral-400 text-xs mb-4 leading-relaxed">You have a live collaboration session running.</p>
-            <button className="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium px-4 py-2 rounded-lg transition shadow-lg shadow-indigo-500/20">
-              Rejoin Session
-            </button>
+
+            {projects.length > 0 ? (
+              <div className="flex flex-col gap-3 max-h-72 overflow-y-auto pr-1">
+                {projects.map((proj) => (
+                  <div
+                    key={proj.id}
+                    className="bg-gradient-to-br from-neutral-900 to-[#121212] border border-neutral-800 hover:border-indigo-500/40 rounded-2xl p-4 transition flex flex-col gap-2"
+                  >
+                    <div className="flex items-start justify-between">
+                      <h4 className="text-white text-xs font-bold truncate max-w-[180px]">{proj.title}</h4>
+                      <span className="text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md font-mono shrink-0">
+                        {proj.githubRepoName}
+                      </span>
+                    </div>
+                    <p className="text-neutral-400 text-[11px] line-clamp-2 leading-relaxed">
+                      {proj.description}
+                    </p>
+                    <button
+                      onClick={() => router.push(`/projects/${proj.id}`)}
+                      className="w-full mt-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"
+                    >
+                      Open Workspace &rarr;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-neutral-900/60 border border-neutral-800/80 rounded-2xl p-5 text-center">
+                <p className="text-neutral-400 text-xs mb-3">No active project workspaces yet.</p>
+                <button
+                  onClick={() => setIsCreateProjectOpen(true)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 rounded-xl transition"
+                >
+                  + Create Workspace
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Trending Tech */}
@@ -236,7 +322,7 @@ export default function HomePage() {
 
 // --- Dynamic Components ---
 
-function IdeaCard({ idea, onDelete, currentUserId }: { idea: any, onDelete: () => void, currentUserId?: string }) {
+function IdeaCard({ idea, onDelete, currentUserId, onCollaborate }: { idea: any, onDelete: () => void, currentUserId?: string, onCollaborate?: (idea: any) => void }) {
   const authorName = idea.author?.username || 'Unknown Developer';
   const hasLiked = idea.likes?.some((l: any) => l.userId === currentUserId);
   
@@ -322,7 +408,10 @@ function IdeaCard({ idea, onDelete, currentUserId }: { idea: any, onDelete: () =
             <CommentIcon /> {comments.length}
           </button>
         </div>
-        <button className="bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2">
+        <button
+          onClick={() => onCollaborate && onCollaborate(idea)}
+          className="bg-[#1e1b4b] hover:bg-indigo-600 text-indigo-300 hover:text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-2 border border-indigo-500/30 shadow-md shadow-indigo-900/30"
+        >
           Collaborate <CodeIcon className="w-3 h-3" />
         </button>
       </div>

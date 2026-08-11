@@ -85,7 +85,18 @@ export const createProject = async (req: Request, res: Response) => {
  */
 export const getProjects = async (req: Request, res: Response) => {
   try {
+    const userId = (req.user as any)?.id;
+    const whereCondition = userId
+      ? {
+          OR: [
+            { ownerId: userId },
+            { members: { some: { userId: userId } } }
+          ]
+        }
+      : {};
+
     const projects = await prisma.project.findMany({
+      where: whereCondition,
       orderBy: { createdAt: 'desc' },
       include: {
         owner: {

@@ -128,10 +128,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   fetchUserGithubRepos: async () => {
     try {
       const response = await api.get('/projects/my-github-repos');
-      return response.data.repos;
+      return response.data.repos || [];
     } catch (err: any) {
-      console.error('Failed to fetch user GitHub repos:', err);
-      throw err;
+      const msg = err.response?.data?.message || 'GitHub account not linked.';
+      set({ error: msg });
+      return [];
     }
   },
 

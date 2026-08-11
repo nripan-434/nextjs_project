@@ -14,9 +14,15 @@ interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (projectId: string) => void;
+  initialData?: {
+    title?: string;
+    description?: string;
+    techStack?: string[];
+    ideaId?: string;
+  } | null;
 }
 
-export default function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalProps) {
+export default function CreateProjectModal({ isOpen, onClose, onSuccess, initialData }: CreateProjectModalProps) {
   const { createProject, fetchUserGithubRepos } = useProjectStore();
   const [activeTab, setActiveTab] = useState<'picker' | 'manual'>('manual');
   const [userRepos, setUserRepos] = useState<any[]>([]);
@@ -36,6 +42,14 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.title) setTitle(initialData.title);
+      if (initialData.description) setDescription(initialData.description);
+      if (initialData.techStack) setTechStack(initialData.techStack);
+    }
+  }, [initialData]);
 
   useEffect(() => {
     if (isOpen && activeTab === 'picker' && userRepos.length === 0) {
@@ -116,7 +130,8 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
         seekingRoles,
         githubRepoOwner: owner,
         githubRepoName: name,
-        githubRepoUrl: repoUrl || `https://github.com/${owner}/${name}`
+        githubRepoUrl: repoUrl || `https://github.com/${owner}/${name}`,
+        ideaId: initialData?.ideaId
       });
 
       onSuccess(result.id);
@@ -246,8 +261,15 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-xs text-neutral-400 border border-neutral-800 rounded-xl bg-neutral-950">
-                    No repositories loaded. Enter repository details manually or click "Connect GitHub" in your profile.
+                  <div className="text-center py-5 px-4 text-xs text-neutral-400 border border-neutral-800 rounded-xl bg-neutral-950 flex flex-col items-center gap-2">
+                    <span>GitHub account not linked or no repositories found.</span>
+                    <a
+                      href="http://localhost:5000/auth/github"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition"
+                    >
+                      <Github className="w-3.5 h-3.5" />
+                      Connect GitHub Account
+                    </a>
                   </div>
                 )}
               </div>
