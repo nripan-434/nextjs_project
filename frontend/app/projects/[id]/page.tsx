@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Star,
@@ -16,8 +16,15 @@ import {
   UserPlus,
   Clock,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Copy,
+  Check,
+  Download,
+  MessageSquare,
+  Send
 } from 'lucide-react';
+import { useUserStore } from '@/store/userStore';
+import { socket } from '@/utils/socket';
 
 const Github = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -34,23 +41,73 @@ export default function ProjectWorkspacePage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params?.id as string;
-  const { fetchProjectById, requestToJoinProject, manageMemberStatus } = useProjectStore();
+  const { fetchProjectById, requestToJoinProject, manageMemberStatus, fetchProjectMessages, addMessage, messages } = useProjectStore();
+  const { user: currentUser, fetchUser } = useUserStore();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [githubData, setGithubData] = useState<LiveGitHubData | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'activity' | 'team' | 'overview'>('activity');
+  const [activeTab, setActiveTab] = useState<'activity' | 'team' | 'overview' | 'chat'>('activity');
   const [joining, setJoining] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [processingMemberId, setProcessingMemberId] = useState<string | null>(null);
 
+  const [copied, setCopied] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyCloneCommand = () => {
+    if (!projectData) return;
+    const cloneUrl = `git clone https://github.com/${projectData.githubRepoOwner}/${projectData.githubRepoName}.git`;
+    navigator.clipboard.writeText(cloneUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
   useEffect(() => {
     if (projectId) {
       loadProject();
+      fetchProjectMessages(projectId);
+      socket.emit('join_project_room', projectId);
+
+      const handleNewMessage = (msg: any) => {
+        if (msg.projectId === projectId) {
+          addMessage(msg);
+        }
+      };
+
+      socket.on('new_project_message', handleNewMessage);
+
+      return () => {
+        socket.off('new_project_message', handleNewMessage);
+      };
     }
   }, [projectId]);
+
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, activeTab]);
+
+  const handleSendMessage = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!chatInput.trim() || !currentUser || !projectId) return;
+
+    socket.emit('send_project_message', {
+      projectId,
+      senderId: currentUser.id,
+      content: chatInput.trim()
+    });
+
+    setChatInput('');
+  };
 
   const loadProject = async () => {
     try {
@@ -219,6 +276,90 @@ export default function ProjectWorkspacePage() {
                 <span className="text-xs text-neutral-400">Team Members</span>
               </div>
             </div>
+
+            {/* Quick Code Access & Clone Section */}
+            <div className="mt-6 pt-6 border-t border-neutral-800/80 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 1. Open Code on GitHub */}
+              <a
+                href={projectData.githubRepoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3.5 bg-neutral-950/80 hover:bg-neutral-900 border border-neutral-800 hover:border-purple-500/40 rounded-2xl transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400">
+                    <Github className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors">
+                      View Code on GitHub
+                    </div>
+                    <div className="text-[10px] text-neutral-400">Browse files & branches</div>
+                  </div>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 text-neutral-500 group-hover:text-purple-400 transition-colors" />
+              </a>
+
+              {/* 2. Download ZIP */}
+              <a
+                href={`https://github.com/${projectData.githubRepoOwner}/${projectData.githubRepoName}/archive/refs/heads/${stats?.defaultBranch || 'main'}.zip`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3.5 bg-neutral-950/80 hover:bg-neutral-900 border border-neutral-800 hover:border-indigo-500/40 rounded-2xl transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white group-hover:text-indigo-300 transition-colors">
+                      Download ZIP
+                    </div>
+                    <div className="text-[10px] text-neutral-400">Get latest source archive</div>
+                  </div>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 text-neutral-500 group-hover:text-indigo-400 transition-colors" />
+              </a>
+
+              {/* 3. 1-Click Git Clone */}
+              <div className="flex items-center justify-between p-3.5 bg-neutral-950/80 border border-neutral-800 rounded-2xl">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 flex-shrink-0">
+                    <Code2 className="w-4 h-4" />
+                  </div>
+                  <div className="overflow-hidden">
+                    <div className="text-xs font-bold text-white">Git Clone Command</div>
+                    <div className="text-[10px] text-neutral-400 font-mono truncate">
+                      git clone https://github.com/{projectData.githubRepoOwner}/{projectData.githubRepoName}.git
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCopyCloneCommand}
+                  className="p-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl transition-colors flex-shrink-0 ml-2"
+                  title="Copy git clone command"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* GitHub Collaboration Invitation Banner */}
+            <div className="mt-4 p-3.5 bg-purple-950/40 border border-purple-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-xs text-purple-200">
+                <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                <span>Need write access to push commits? Accept your repository invitation on GitHub!</span>
+              </div>
+              <a
+                href={`https://github.com/${projectData.githubRepoOwner}/${projectData.githubRepoName}/invitations`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 flex-shrink-0"
+              >
+                <span>Accept GitHub Invite</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
           </div>
         </div>
 
@@ -266,7 +407,101 @@ export default function ProjectWorkspacePage() {
             <Layers className="w-4 h-4" />
             Tech & Requirements
           </button>
+
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`pb-4 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 relative ${
+              activeTab === 'chat'
+                ? 'text-purple-400 border-b-2 border-purple-500'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Team Chat ({messages.length})
+          </button>
         </div>
+
+        {/* Tab 4: Real-time Group Chat */}
+        {activeTab === 'chat' && (
+          <div className="bg-neutral-900/60 border border-neutral-800 rounded-3xl p-6 shadow-2xl flex flex-col h-[550px]">
+            <div className="flex items-center justify-between pb-4 border-b border-neutral-800 mb-4">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-purple-400" />
+                Collaborator Group Chat
+              </h3>
+              <span className="text-xs text-neutral-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                🟢 Live Socket.io Room
+              </span>
+            </div>
+
+            {/* Message List */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {messages.length > 0 ? (
+                messages.map((msg) => {
+                  const isMe = msg.senderId === currentUser?.id;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`}
+                    >
+                      {msg.sender?.avatar ? (
+                        <img src={msg.sender.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                          {msg.sender?.username?.charAt(0) || 'U'}
+                        </div>
+                      )}
+                      <div className={`max-w-md ${isMe ? 'items-end text-right' : ''}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-semibold text-neutral-300">
+                            {isMe ? 'You' : msg.sender?.username || 'Collaborator'}
+                          </span>
+                          <span className="text-[10px] text-neutral-500">
+                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div
+                          className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                            isMe
+                              ? 'bg-purple-600 text-white rounded-tr-none'
+                              : 'bg-neutral-800 text-neutral-200 rounded-tl-none border border-neutral-700/60'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-neutral-500 text-xs">
+                  <MessageSquare className="w-8 h-8 mb-2 opacity-30" />
+                  <p>No messages in this workspace yet. Start the conversation!</p>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Message Input Box */}
+            <form onSubmit={handleSendMessage} className="pt-4 border-t border-neutral-800 flex items-center gap-3">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Type a message to project collaborators..."
+                className="flex-1 bg-neutral-950 border border-neutral-800 focus:border-purple-500 text-white text-xs rounded-2xl px-4 py-3 outline-none transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-2xl transition-all disabled:opacity-40 flex items-center gap-1.5 shadow-lg shadow-purple-600/20"
+              >
+                <span>Send</span>
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Tab 1: Live GitHub Activity */}
         {activeTab === 'activity' && (

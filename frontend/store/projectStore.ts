@@ -77,10 +77,24 @@ export interface CreateProjectInput {
   ideaId?: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  content: string;
+  senderId: string;
+  projectId: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    username: string | null;
+    avatar: string | null;
+  };
+}
+
 interface ProjectState {
   projects: ProjectData[];
   currentProject: ProjectData | null;
   liveGithubData: LiveGitHubData | null;
+  messages: ChatMessage[];
   isLoading: boolean;
   error: string | null;
 
@@ -90,12 +104,15 @@ interface ProjectState {
   createProject: (data: CreateProjectInput) => Promise<ProjectData>;
   requestToJoinProject: (projectId: string, role?: string) => Promise<void>;
   manageMemberStatus: (projectId: string, memberId: string, action: 'ACCEPT' | 'REJECT') => Promise<{ message: string; githubInviteSent?: boolean }>;
+  fetchProjectMessages: (projectId: string) => Promise<void>;
+  addMessage: (message: ChatMessage) => void;
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projects: [],
   currentProject: null,
   liveGithubData: null,
+  messages: [],
   isLoading: false,
   error: null,
 
@@ -171,5 +188,23 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       console.error('Failed to manage member status:', err);
       throw err;
     }
+  },
+
+  fetchProjectMessages: async (projectId: string) => {
+    try {
+      const response = await api.get(`/projects/${projectId}/messages`);
+      set({ messages: response.data.messages || [] });
+    } catch (err: any) {
+      console.error('Failed to fetch project messages:', err);
+    }
+  },
+
+  addMessage: (message: ChatMessage) => {
+    set((state) => {
+      if (state.messages.some((m) => m.id === message.id)) {
+        return state;
+      }
+      return { messages: [...state.messages, message] };
+    });
   }
 }));

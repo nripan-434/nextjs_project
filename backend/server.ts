@@ -14,14 +14,16 @@ import projectRoutes from './routes/projectRoutes.js';
 import passport from 'passport';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { createClient } from 'redis';
-import {RedisStore} from 'connect-redis';
+import { RedisStore } from 'connect-redis';
 
 dotenv.config();
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
+
+// Initialize Redis client to connect Node backend server with Redis database
 const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
+    url: process.env.REDIS_URL as string
 });
 redisClient.on('error', (err) => console.error('Redis Client Error', err));
 redisClient.on('connect', () => console.log('Connected to Redis successfully'));
@@ -40,9 +42,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(session({
-    store: new RedisStore({ client: redisClient }), // <--- ADD THIS LINE
+    store: new RedisStore({ client: redisClient }),
     secret: process.env.SESSION_SECRET || 'fallback_secret',
-    resave: false, // RedisStore handles saving
+    resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
@@ -66,6 +68,39 @@ io.on('connection', (socket) => {
   socket.on('join_user_room', (userId: string) => {
     if (userId) {
       socket.join(`user_${userId}`);
+    }
+  });
+
+  socket.on('join_project_room', (projectId: string) => {
+    if (projectId) {
+      socket.join(`project_${projectId}`);
+    }
+  });
+
+  socket.on('send_project_message', async (data: {
+    projectId: string;
+    senderId: string;
+    content: string;
+  }) => {
+    try {
+      if (!data.projectId || !data.senderId || !data.content.trim()) return;
+
+      const message = await prisma.message.create({
+        data: {
+          projectId: data.projectId,
+          senderId: data.senderId,
+          content: data.content.trim()
+        },
+        include: {
+          sender: {
+            select: { id: true, username: true, avatar: true }
+          }
+        }
+      });
+
+      io.to(`project_${data.projectId}`).emit('new_project_message', message);
+    } catch (err) {
+      console.error('Error saving socket project message:', err);
     }
   });
 

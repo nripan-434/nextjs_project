@@ -310,3 +310,26 @@ export const manageMemberStatus = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal server error managing member request' });
   }
 };
+
+/**
+ * Fetch Chat Message History for a Project
+ */
+export const getProjectMessages = async (req: Request, res: Response) => {
+  try {
+    const projectId = req.params.id as string;
+    const messages = await prisma.message.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        sender: {
+          select: { id: true, username: true, avatar: true }
+        }
+      }
+    });
+
+    return res.status(200).json({ messages });
+  } catch (error: any) {
+    console.error('Error fetching project messages:', error);
+    return res.status(500).json({ message: 'Internal server error fetching project messages' });
+  }
+};

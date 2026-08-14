@@ -99,6 +99,7 @@ model Project {
   idea            Idea?           @relation(fields: [ideaId], references: [id], onDelete: SetNull)
   
   members         ProjectMember[]
+  messages        Message[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt

@@ -5,7 +5,8 @@ import {
   getProjectById,
   getUserGithubRepos,
   requestToJoinProject,
-  manageMemberStatus
+  manageMemberStatus,
+  getProjectMessages
 } from '../controllers/ProjectController.js';
 
 const router = Router();
@@ -23,6 +24,7 @@ router.get('/', getProjects);
 router.post('/', requireAuth, createProject);
 router.get('/my-github-repos', requireAuth, getUserGithubRepos);
 router.get('/:id', getProjectById);
+router.get('/:id/messages', getProjectMessages);
 router.post('/:id/join', requireAuth, requestToJoinProject);
 router.patch('/:id/members/:memberId', requireAuth, manageMemberStatus);
 
