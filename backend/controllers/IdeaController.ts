@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { prisma } from '../server.js';
+import { prisma, io } from '../server.js';
 import type { CreateIdeaDTO, UpdateIdeaDTO, CreateCommentDTO } from '../../types/index.js';
 
 // Create a new Idea (Post)
@@ -150,5 +150,70 @@ export const addComment = async (req: Request, res: Response): Promise<any> => {
     } catch(err) {
         console.error("Error adding comment:", err);
         return res.status(500).json({ message: "Error adding comment" });
+    }
+};
+
+// Request Collaboration on an Idea (API #1)
+export const requestIdeaCollaboration = async (req: Request, res: Response): Promise<any> => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Not authenticated" });
+        }
+        const senderId = (req.user as any).id;
+        const ideaId = req.params.id as string;
+
+        // 1. Find target Idea
+        const idea = await prisma.idea.findUnique({ where: { id: ideaId } });
+        if (!idea) {
+            return res.status(404).json({ message: "Idea not found" });
+        }
+
+        // 2. Prevent self-collaboration
+        if (idea.authorId === senderId) {
+            return res.status(400).json({ message: "You cannot request collaboration on your own idea" });
+        }
+
+        // 3. Prevent duplicate requests
+        const existingRequest = await prisma.collabrationRequest.findUnique({
+            where: {
+                ideaId_senderId: { ideaId, senderId }
+            }
+        });
+        if (existingRequest) {
+            return res.status(400).json({ message: "Collaboration request already sent for this idea" });
+        }
+
+        // 4. Save Collaboration Request to PostgreSQL Database
+        const collabRequest = await prisma.collabrationRequest.create({
+            data: {
+                ideaId,
+                senderId,
+                recieverId: idea.authorId,
+                status: 'PENDING'
+            },
+            include: {
+                sender: { select: { id: true, username: true, avatar: true } },
+                idea: { select: { id: true, title: true } }
+            }
+        });
+
+        // 5. Broadcast Real-time Socket Notification to Idea Owner
+        io.to(`user_${idea.authorId}`).emit('new_collaborate_notification', {
+            id: collabRequest.id,
+            senderId: collabRequest.senderId,
+            senderName: collabRequest.sender?.username || 'Collaborator',
+            senderAvatar: collabRequest.sender?.avatar,
+            ideaId: collabRequest.ideaId,
+            ideaTitle: collabRequest.idea.title,
+            timestamp: collabRequest.createdAt.toISOString()
+        });
+
+        return res.status(201).json({
+            message: "Collaboration request sent successfully",
+            collabRequest
+        });
+    } catch (err) {
+        console.error("Error requesting collaboration:", err);
+        return res.status(500).json({ message: "Server error sending collaboration request" });
     }
 };

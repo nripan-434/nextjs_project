@@ -38,7 +38,8 @@ model User {
   projectMemberships ProjectMember[]
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
-
+  receivedCollabRequests CollabrationRequest[] @relation("ReceivedCollabRequests")
+  sentCollabRequests CollabrationRequest[] @relation("SentCollabRequests")
 }
 
 model Idea {
@@ -56,6 +57,7 @@ model Idea {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  collabrationRequests CollabrationRequest[]
 }
 
 model Like {
@@ -134,3 +136,15 @@ model Message {
   receiver   User?   @relation("ReceivedMessages", fields: [receiverId], references: [id])
   createdAt DateTime @default(now())
 } 
+model CollabrationRequest{
+  id      String   @id @default(uuid())
+  ideaId  String  
+  idea    Idea    @relation(fields:[ideaId],references:[id],onDelete:Cascade)
+  recieverId String 
+  reciever User  @relation("ReceivedCollabRequests",fields:[recieverId],references:[id],onDelete:Cascade)
+  senderId  String
+  sender  User @relation("SentCollabRequests",fields:[senderId],references:[id],onDelete:Cascade)
+  status  String @default("PENDING")
+  createdAt DateTime @default(now())
+  @@unique([ideaId, senderId])
+}
