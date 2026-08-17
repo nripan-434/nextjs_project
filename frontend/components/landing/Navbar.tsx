@@ -34,12 +34,15 @@ export function Navbar() {
           </div>
         </Link>
 
+        
         <nav className="hidden items-center gap-7 text-sm text-gray-300 lg:flex">
-          {navItems.map((item) => (
+          {  
+          user?
+          navItems.map((item) => (
             <Link key={item.label} href={item.href} className="transition hover:text-white">
               {item.label}
             </Link>
-          ))}
+          )):<p></p>}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">

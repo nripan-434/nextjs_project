@@ -2,17 +2,32 @@ import type { Request, Response } from 'express';
 import { prisma, io } from '../server.js';
 import type { CreateIdeaDTO, UpdateIdeaDTO, CreateCommentDTO } from '../../types/index.js';
 
-// Create a new Idea (Post)
 export const createIdea = async (req: Request, res: Response): Promise<any> => {
     try {
         if (!req.user) {
             return res.status(401).json({ message: "Not authenticated" });
         }
         const authorId = (req.user as any).id;
-        const { title, description, tags } = req.body;
+        const { title, description, tags, githubRepourl, githubRepoOwner, githubRepoName } = req.body;
 
         if (!title || !description) {
             return res.status(400).json({ message: "Title and description are required" });
+        }
+        let repourl = githubRepourl;
+        let repoowner = githubRepoOwner;
+        let repoName = githubRepoName;
+        if (githubRepourl) {
+            const cleaned = githubRepourl
+                .replace('https://github.com/', '')
+                .replace('http://github.com/', '')
+                .replace(/\/$/, '');
+
+            const parts = cleaned.split('/');
+            if (parts.length >= 2) {
+                repoowner = parts[0];
+                repoName = parts[1];
+                repourl = `https://github.com/${repoowner}/${repoName}`;
+            }
         }
 
         const newIdea = await prisma.idea.create({
@@ -28,21 +43,44 @@ export const createIdea = async (req: Request, res: Response): Promise<any> => {
                 comments: { include: { user: { select: { username: true, avatar: true } } } }
             }
         });
-
-        return res.status(201).json(newIdea);
+        let project = null;
+        if (repoowner && repoName) {
+            project = await prisma.project.create({
+                data: {
+                    title,
+                    description,
+                    githubRepoOwner: repoowner,
+                    githubRepoName: repoName,
+                    githubRepoUrl: repourl,
+                    ownerId: authorId,
+                    ideaId: newIdea.id,
+                    members: {
+                        create: {
+                            userId: authorId,
+                            role: 'OWNER',
+                            status: 'ACCEPTED'
+                        }
+                    }
+                }
+            });
+        }
+        return res.status(201).json({
+            ...newIdea,
+            project
+        });
     } catch (error) {
         console.error("Error creating idea:", error);
         return res.status(500).json({ message: "Server error creating idea" });
     }
 };
 
-// Get all Ideas (Feed)
 export const getIdeas = async (req: Request, res: Response): Promise<any> => {
     try {
         const ideas = await prisma.idea.findMany({
             orderBy: { createdAt: 'desc' },
             include: {
-                author: { select: { username: true, avatar: true } },
+                author: { select: { id: true, username: true, avatar: true } },
+                project: { select: { id: true, githubRepoOwner: true, githubRepoName: true, githubRepoUrl: true } },
                 likes: true,
                 comments: {
                     include: { user: { select: { username: true, avatar: true } } },
@@ -126,7 +164,7 @@ export const toggleLikeIdea = async (req: Request, res: Response): Promise<any> 
             const newLike = await prisma.like.create({ data: { userId, ideaId } });
             return res.status(200).json({ liked: true, like: newLike });
         }
-    } catch(err) {
+    } catch (err) {
         console.error("Error toggling like:", err);
         return res.status(500).json({ message: "Error toggling like" });
     }
@@ -147,7 +185,7 @@ export const addComment = async (req: Request, res: Response): Promise<any> => {
             include: { user: { select: { username: true, avatar: true } } }
         });
         return res.status(201).json(comment);
-    } catch(err) {
+    } catch (err) {
         console.error("Error adding comment:", err);
         return res.status(500).json({ message: "Error adding comment" });
     }

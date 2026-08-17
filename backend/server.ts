@@ -56,7 +56,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Setup Socket.io Real-Time Notifications
 export const io = new Server(server, {
   cors: {
     origin: frontendOrigin,

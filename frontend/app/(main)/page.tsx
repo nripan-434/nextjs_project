@@ -34,18 +34,7 @@ export default function LandingPage() {
 
       {/* Blur Overlay - Placed between z-0 background and z-10 content */}
       
-      <motion.div 
-        initial={{ y: -500 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="absolute h-[70vh] border-white border-b-2  opacity-60 inset-0 z-[5] bg-black/20 pointer-events-none"
-      />
-      <motion.div 
-        initial={{ x: -500 }}
-        animate={{ x: 0 }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
-        className="absolute w-[100vh] h-[85vh]  border-white border-r-2  opacity-80  inset-0 z-[5]  pointer-events-none"
-      />
+      
 
       {/* Static Content / Hero Section - Glassmorphism UI */}
       <div className="absolute top-0 left-0 w-full h-screen z-10 flex justify-center items-center">
